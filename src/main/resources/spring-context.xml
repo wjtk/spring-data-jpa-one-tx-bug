@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+       http://www.springframework.org/schema/data/jpa http://www.springframework.org/schema/data/jpa/spring-jpa.xsd
+       ">
+
+    <context:annotation-config />
+    <context:component-scan base-package="wkr.test.spring.bug"/>
+    <context:property-placeholder location="classpath:/jdbc.properties" />
+
+
+
+    <bean id="entityManagerFactory" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean"
+          p:dataSource-ref="dataSource" p:jpaVendorAdapter-ref="jpaVendorAdapter"/>
+
+    <bean id="jpaVendorAdapter" class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter"
+          p:database="${jpa.database}"
+          p:showSql="${jpa.showSql}"
+            />
+
+    <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource"
+          p:driverClassName="${jdbc.driverClassName}"
+          p:url="${jdbc.url}" />
+
+
+    <beans profile="transactionManager">
+        <!-- transaction-manager can be omitted, when tx name is "transactionManager" -->
+        <tx:annotation-driven/>
+
+        <bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager"
+              p:entityManagerFactory-ref="entityManagerFactory" />
+
+        <jpa:repositories base-package="wkr.test.spring.bug"/>
+    </beans>
+
+    <beans profile="txManager">
+        <tx:annotation-driven transaction-manager="txManager"/>
+
+        <bean id="txManager" class="org.springframework.orm.jpa.JpaTransactionManager"
+              p:entityManagerFactory-ref="entityManagerFactory" />
+
+         <!--
+         transaction-manager-ref can be ommited when there is only one in context - BUG NOT TRUE
+         http://docs.spring.io/spring-data/jpa/docs/1.4.1.RELEASE/reference/html/jpa.repositories.html#jpa.namespace-attributes
+         -->
+        <jpa:repositories base-package="wkr.test.spring.bug"/>
+    </beans>
+
+
+    <beans profile="explicit_txManager">
+        <tx:annotation-driven transaction-manager="txManager"/>
+
+        <bean id="txManager" class="org.springframework.orm.jpa.JpaTransactionManager"
+              p:entityManagerFactory-ref="entityManagerFactory" />
+
+        <!-- explicit txManager ref  -->
+        <jpa:repositories base-package="wkr.test.spring.bug" transaction-manager-ref="txManager"/>
+    </beans>
+
+</beans>
